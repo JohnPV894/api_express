@@ -38,6 +38,9 @@ async function connectToMongoDB() {
 
 // Función para obtener todos los estudiantes
 async function buscarEstudiantes() {
+  if (!db) {
+    throw new Error('Base de datos no disponible');
+  }
   try {
     const collection = db.collection('estudiantes');
     return await collection.find().toArray();
@@ -49,6 +52,9 @@ async function buscarEstudiantes() {
 
 // Función para obtener estudiantes por nombre
 async function buscarEstudiantesPorNombre(nombre) {
+  if (!db) {
+    throw new Error('Base de datos no disponible');
+  }
   try {
     const collection = db.collection('estudiantes');
     return await collection.find({ nombre }).toArray();
@@ -60,6 +66,9 @@ async function buscarEstudiantesPorNombre(nombre) {
 
 // Función para agregar un estudiante
 async function subirEstudiante(estudiante) {
+  if (!db) {
+    throw new Error('Base de datos no disponible');
+  }
   try {
     const collection = db.collection('estudiantes');
     await collection.insertOne(estudiante);
