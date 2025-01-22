@@ -6,12 +6,12 @@ const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
 const middlewares = require('./middlewares');
-const api = require('./api');
+
 const app = express();
 
 
 const corsOptions = {
-  origin: 'https://practicaapi.vercel.app/', // Reemplaza con la URL de tu frontend en producción
+  origin: '*', // Reemplaza con la URL de tu frontend en producción
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 };
 
@@ -186,7 +186,7 @@ app.post('/users/agregar/:nombre/:apellido/:telefono',(req,res) =>{
   res.status(201).send("Usuario Creado Correctamente");
   }
 )
-app.use('/api/v1', api);
+
 
 app.use(middlewares.notFound);
 app.use(middlewares.errorHandler);
