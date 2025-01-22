@@ -22,11 +22,13 @@ const cliente = new MongoClient(uri);
 
 // Conexión persistente a MongoDB
 let dbClient;
+let db;
 
+// Conectar a MongoDB al inicio
 async function connectToMongoDB() {
   try {
-    // Abre la conexión a MongoDB solo una vez
     dbClient = await cliente.connect();
+    db = dbClient.db('express');  // Selecciona la base de datos
     console.log('Conexión exitosa a MongoDB');
   } catch (error) {
     console.error('Error al conectar a MongoDB:', error);
@@ -34,13 +36,9 @@ async function connectToMongoDB() {
   }
 }
 
-// Conectar a MongoDB al inicio
-connectToMongoDB().catch((error) => console.error(error));
-
 // Función para obtener todos los estudiantes
 async function buscarEstudiantes() {
   try {
-    const db = dbClient.db('express');
     const collection = db.collection('estudiantes');
     return await collection.find().toArray();
   } catch (error) {
@@ -52,7 +50,6 @@ async function buscarEstudiantes() {
 // Función para obtener estudiantes por nombre
 async function buscarEstudiantesPorNombre(nombre) {
   try {
-    const db = dbClient.db('express');
     const collection = db.collection('estudiantes');
     return await collection.find({ nombre }).toArray();
   } catch (error) {
@@ -64,7 +61,6 @@ async function buscarEstudiantesPorNombre(nombre) {
 // Función para agregar un estudiante
 async function subirEstudiante(estudiante) {
   try {
-    const db = dbClient.db('express');
     const collection = db.collection('estudiantes');
     await collection.insertOne(estudiante);
   } catch (error) {
@@ -130,6 +126,12 @@ app.post('/users/agregar/:nombre/:apellido/:telefono', async (req, res) => {
       details: error.message,
     });
   }
+});
+
+// Conectar a MongoDB antes de escuchar las rutas
+connectToMongoDB().catch((error) => {
+  console.error('Error al conectar con la base de datos:', error);
+  process.exit(1); // Termina la ejecución si no se puede conectar a MongoDB
 });
 
 app.use(middlewares.notFound);
