@@ -2,126 +2,76 @@ const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
 const { MongoClient } = require('mongodb');
-
 require('dotenv').config();
 
 const middlewares = require('./middlewares');
-
 const app = express();
 
-
+// Configuración de CORS
 const corsOptions = {
-  origin: '*', // Reemplaza con la URL de tu frontend en producción
+  origin: '*', // Cambiar por la URL de tu frontend en producción
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 };
 
 app.use(cors(corsOptions));
-const uri ="mongodb+srv://santiago894:P5wIGtXue8HvPvli@cluster0.6xkz1.mongodb.net/";
+app.use(express.json());
+
+// URI de conexión con MongoDB
+const uri = 'mongodb+srv://santiago894:P5wIGtXue8HvPvli@cluster0.6xkz1.mongodb.net/';
 const cliente = new MongoClient(uri);
 
+// Conexión persistente a MongoDB
+let dbClient;
 
-async function connectToMongoDB(uri) {
-  if (!uri) {
-    throw new Error('Debe proporcionar un URI ');
-  }
-
-  const client = new MongoClient(uri);
-
+async function connectToMongoDB() {
   try {
-    await client.connect();
+    // Abre la conexión a MongoDB solo una vez
+    dbClient = await cliente.connect();
     console.log('Conexión exitosa a MongoDB');
-    return client;
   } catch (error) {
     console.error('Error al conectar a MongoDB:', error);
     throw error;
   }
 }
 
-(async () => {
-  // URI actualizado
-  const uri = 'mongodb+srv://santiago894:P5wIGtXue8HvPvli@cluster0.6xkz1.mongodb.net/miBaseDeDatos?retryWrites=true&w=majority';
-  let client;
+// Conectar a MongoDB al inicio
+connectToMongoDB().catch((error) => console.error(error));
 
+// Función para obtener todos los estudiantes
+async function buscarEstudiantes() {
   try {
-    client = await connectToMongoDB(uri);
-  } catch (error) {
-    console.error('Error:', error);
-  } finally {
-    if (client) {
-      await client.close();
-      console.log('Conexión cerrada.');
-    }
-  }
-})();
-
-
-async function subirEstudiante(client,dbName,estudiante) {
-  try {
-    // Conectar al cliente
-    await client.connect();
-    console.log('Conectado a MongoDB');
-
-    // Seleccionar la base de datos y colección
-    const db = client.db(dbName);
+    const db = dbClient.db('express');
     const collection = db.collection('estudiantes');
-
-    // Subir los datos
-    const resultado = await collection.insertOne(estudiante);
-    console.log("Deberia estar correcto");
-    
+    return await collection.find().toArray();
   } catch (error) {
-    console.error('Error al subir estudiante:', error);
-  } finally {
-
-    await client.close();
+    console.error('Error al buscar estudiantes:', error);
+    throw error;
   }
 }
 
-//Mostrar/Recuperar todos los estudiantes en la coleccion
-async function buscarEstudiantes(client) {
+// Función para obtener estudiantes por nombre
+async function buscarEstudiantesPorNombre(nombre) {
   try {
-    // Conectar al cliente
-    await client.connect();
-    console.log('Conectado a MongoDB');
-
-    // entrar a la base de datos y colección
-    let db = client.db('express');
-    let colección = db.collection('estudiantes');
-
-    // convertir los resultados a un array
-    let estudiantes = await colección.find().toArray();
-    return estudiantes;
-
-  } catch (error) {
-    console.error('Error al buscar estudiante:', error);
-  } finally {
-    await client.close();
-  }
-}
-
-async function buscarEstudiantesPorNombre(client, nombre) {
-  try {
-    // Conectar al cliente
-    await client.connect();
-    console.log('Conectado a MongoDB');
-
-    // Acceder a la base de datos y colección
-    const db = client.db('express');
-    const colección = db.collection('estudiantes');
-
-    // Buscar estudiantes por nombre
-    const estudiantes = await colección.find({ nombre: nombre }).toArray();
-
-    return estudiantes;
+    const db = dbClient.db('express');
+    const collection = db.collection('estudiantes');
+    return await collection.find({ nombre }).toArray();
   } catch (error) {
     console.error('Error al buscar estudiantes por nombre:', error);
-  } finally {
-    await client.close();
+    throw error;
   }
 }
 
-app.use(express.json());
-
+// Función para agregar un estudiante
+async function subirEstudiante(estudiante) {
+  try {
+    const db = dbClient.db('express');
+    const collection = db.collection('estudiantes');
+    await collection.insertOne(estudiante);
+  } catch (error) {
+    console.error('Error al subir estudiante:', error);
+    throw error;
+  }
+}
 
 app.get('/', (req, res) => {
   res.json({
@@ -129,15 +79,11 @@ app.get('/', (req, res) => {
   });
 });
 
-
-
-//Devolver todos los usuarios
+// Obtener todos los estudiantes
 app.get('/users', async (req, res) => {
   try {
-    const estudiantes = await buscarEstudiantes(cliente);
-    res.json({
-      message: estudiantes,
-    });
+    const estudiantes = await buscarEstudiantes();
+    res.json({ message: estudiantes });
   } catch (error) {
     res.status(500).json({
       error: 'Error al obtener estudiantes',
@@ -146,17 +92,14 @@ app.get('/users', async (req, res) => {
   }
 });
 
-// buscar un estudiante por su nombre
+// Buscar estudiantes por nombre
 app.get('/users/:nombre', async (req, res) => {
-  const nombre = req.params.nombre; // Obtener el nombre desde los parámetros de la URL
+  const nombre = req.params.nombre;
 
   try {
-    const estudiantes = await buscarEstudiantesPorNombre(cliente, nombre);
-
+    const estudiantes = await buscarEstudiantesPorNombre(nombre);
     if (estudiantes.length > 0) {
-      res.json({
-        message: estudiantes
-      });
+      res.json({ message: estudiantes });
     } else {
       res.status(404).json({
         message: `No se encontraron estudiantes con el nombre: ${nombre}`,
@@ -170,23 +113,24 @@ app.get('/users/:nombre', async (req, res) => {
   }
 });
 
-//Agregar un nuevo usuario a el array "estudiantes"
-app.post('/users/agregar/:nombre/:apellido/:telefono',(req,res) =>{
-  
-  let nombre = req.params.nombre;
-  let apellido = req.params.apellido;
-  let telefono = req.params.telefono;
+// Agregar un nuevo estudiante
+app.post('/users/agregar/:nombre/:apellido/:telefono', async (req, res) => {
+  const { nombre, apellido, telefono } = req.params;
 
-  subirEstudiante(cliente,"express",{
-          nombre:  nombre,
-          apellido:apellido,
-          telefono:telefono,
-  });
-
-  res.status(201).send("Usuario Creado Correctamente");
+  try {
+    await subirEstudiante({
+      nombre,
+      apellido,
+      telefono,
+    });
+    res.status(201).send('Usuario Creado Correctamente');
+  } catch (error) {
+    res.status(500).json({
+      error: 'Error al agregar el estudiante',
+      details: error.message,
+    });
   }
-)
-
+});
 
 app.use(middlewares.notFound);
 app.use(middlewares.errorHandler);
