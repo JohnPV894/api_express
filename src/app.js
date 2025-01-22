@@ -22,7 +22,8 @@ const cliente = new MongoClient(uri);
 
 // Conexión persistente a MongoDB
 let dbClient;
-let db;
+let db;//Nombre de la base de datos : express
+//Nombre de la collecion que se esta utilizando : estudiantes
 
 // Conectar a MongoDB al inicio
 async function connectToMongoDB() {
