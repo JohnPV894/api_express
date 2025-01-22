@@ -18,8 +18,9 @@ app.use(express.json());
 
 // URI de conexión con MongoDB
 const uri = 'mongodb+srv://santiago894:P5wIGtXue8HvPvli@cluster0.6xkz1.mongodb.net/';
-const cliente = new MongoClient(uri);
-
+const cliente = new MongoClient(uri, {
+  useUnifiedTopology: true,
+});
 // Conexión persistente a MongoDB
 let dbClient;
 let db;//Nombre de la base de datos : express
