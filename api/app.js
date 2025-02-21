@@ -11,7 +11,7 @@ const app = express();
 const corsOptions = {
   origin: 'https://practicaapi.vercel.app/', // Cambiar por la URL de tu frontend en producción
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  //allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
 app.use(cors(corsOptions));
