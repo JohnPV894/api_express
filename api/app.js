@@ -31,9 +31,9 @@ async function connectToMongoDB() {
   try {
     dbClient = await cliente.connect();
     db = dbClient.db('express');  // Selecciona la base de datos
-    console.log('Conexión exitosa a MongoDB');
+    //console.log('Conexión exitosa a MongoDB');
   } catch (error) {
-    console.error('Error al conectar a MongoDB:', error);
+    //console.error('Error al conectar a MongoDB:', error);
     throw error;
   }
 }
