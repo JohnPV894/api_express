@@ -11,6 +11,7 @@ const app = express();
 const corsOptions = {
   origin: '*', // Cambiar por la URL de tu frontend en producción
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
 app.use(cors(corsOptions));
