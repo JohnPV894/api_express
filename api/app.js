@@ -1,85 +1,31 @@
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
-const { MongoClient } = require('mongodb');
+const middlewares = require('./middlewares');
 require('dotenv').config();
 
-const middlewares = require('./middlewares');
 const app = express();
 
 // Configuración de CORS
 const corsOptions = {
   origin: '*', // Cambiar por la URL de tu frontend en producción
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  //allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(morgan('dev'));
 
-// URI de conexión con MongoDB
-const uri = 'mongodb+srv://santiago894:P5wIGtXue8HvPvli@cluster0.6xkz1.mongodb.net/';
-const cliente = new MongoClient(uri);
-
-// Conexión persistente a MongoDB
-let dbClient;
-let db;//Nombre de la base de datos : express
-//Nombre de la collecion que se esta utilizando : estudiantes
-
-// Conectar a MongoDB al inicio
-async function connectToMongoDB() {
-  try {
-    dbClient = await cliente.connect();
-    db = dbClient.db('express');  // Selecciona la base de datos
-    //console.log('Conexión exitosa a MongoDB');
-  } catch (error) {
-    //console.error('Error al conectar a MongoDB:', error);
-    throw error;
-  }
-}
-
-// Función para obtener todos los estudiantes
-async function buscarEstudiantes() {
-  if (!db) {
-    throw new Error('Base de datos no disponible');
-  }
-  try {
-    const collection = db.collection('estudiantes');
-    return await collection.find().toArray();
-  } catch (error) {
-    console.error('Error al buscar estudiantes:', error);
-    throw error;
-  }
-}
-
-// Función para obtener estudiantes por nombre
-async function buscarEstudiantesPorNombre(nombre) {
-  if (!db) {
-    throw new Error('Base de datos no disponible');
-  }
-  try {
-    const collection = db.collection('estudiantes');
-    return await collection.find({ nombre }).toArray();
-  } catch (error) {
-    console.error('Error al buscar estudiantes por nombre:', error);
-    throw error;
-  }
-}
-
-// Función para agregar un estudiante
-async function subirEstudiante(estudiante) {
-  if (!db) {
-    throw new Error('Base de datos no disponible');
-  }
-  try {
-    const collection = db.collection('estudiantes');
-    await collection.insertOne(estudiante);
-  } catch (error) {
-    console.error('Error al subir estudiante:', error);
-    throw error;
-  }
-}
-
+// Datos locales en lugar de MongoDB
+let estudiantes = [
+  { nombre: 'Juan', apellido: 'Perez', telefono: '123456789' },
+  { nombre: 'Maria', apellido: 'Lopez', telefono: '987654321' },
+  { nombre: 'Carlos', apellido: 'Ramirez', telefono: '456123789' }
+];
+let port = 5000;
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
 app.get('/', (req, res) => {
   res.json({
     message: '🦄🌈✨👋🌎🌍🌏✨🌈🦄+ HOLA Eder',
@@ -87,65 +33,60 @@ app.get('/', (req, res) => {
 });
 
 // Obtener todos los estudiantes
-app.get('/users', async (req, res) => {
-  try {
-    const estudiantes = await buscarEstudiantes();
-    res.json({ message: estudiantes });
-  } catch (error) {
-    res.status(500).json({
-      error: 'Error al obtener estudiantes',
-      details: error.message,
+app.get('/users', (req, res) => {
+  res.json({ message: estudiantes });
+});
+
+// Buscar estudiantes por nombre
+app.get('/users/nombre/:nombre', (req, res) => {
+  const nombre = req.params.nombre;
+  const resultado = estudiantes.filter(est => est.nombre === nombre);
+
+  if (resultado.length > 0) {
+    res.json({ message: resultado });
+  } else {
+    res.status(404).json({
+      message: `No se encontraron estudiantes con el nombre: ${nombre}`,
     });
   }
 });
 
-// Buscar estudiantes por nombre
-app.get('/users/:nombre', async (req, res) => {
-  const nombre = req.params.nombre;
+// Buscar estudiantes por apellido
+app.get('/users/apellido/:apellido', (req, res) => {
+  const apellido = req.params.apellido;
+  const resultado = estudiantes.filter(est => est.apellido === apellido);
 
-  try {
-    const estudiantes = await buscarEstudiantesPorNombre(nombre);
-    if (estudiantes.length > 0) {
-      res.json({ message: estudiantes });
-    } else {
-      res.status(404).json({
-        message: `No se encontraron estudiantes con el nombre: ${nombre}`,
-      });
-    }
-  } catch (error) {
-    res.status(500).json({
-      message: 'Error al buscar los estudiantes',
-      details: error.message,
+  if (resultado.length > 0) {
+    res.json({ message: resultado });
+  } else {
+    res.status(404).json({
+      message: `No se encontraron estudiantes con el apellido: ${apellido}`,
+    });
+  }
+});
+
+// Buscar estudiantes por teléfono
+app.get('/users/telefono/:telefono', (req, res) => {
+  const telefono = req.params.telefono;
+  const resultado = estudiantes.filter(est => est.telefono === telefono);
+
+  if (resultado.length > 0) {
+    res.json({ message: resultado });
+  } else {
+    res.status(404).json({
+      message: `No se encontraron estudiantes con el teléfono: ${telefono}`,
     });
   }
 });
 
 // Agregar un nuevo estudiante
-app.post('/users/agregar/:nombre/:apellido/:telefono', async (req, res) => {
+app.post('/users/agregar/:nombre/:apellido/:telefono', (req, res) => {
   const { nombre, apellido, telefono } = req.params;
-
-  try {
-    await subirEstudiante({
-      nombre,
-      apellido,
-      telefono,
-    });
-    res.status(201).send('Usuario Creado Correctamente');
-  } catch (error) {
-    res.status(500).json({
-      error: 'Error al agregar el estudiante',
-      details: error.message,
-    });
-  }
+  estudiantes.push({ nombre, apellido, telefono });
+  res.status(201).send('Usuario Creado Correctamente');
 });
 
-// Conectar a MongoDB antes de escuchar las rutas
-connectToMongoDB().catch((error) => {
-  console.error('Error al conectar con la base de datos:', error);
-  process.exit(1); // Termina la ejecución si no se puede conectar a MongoDB
-});
-
-app.use(middlewares.notFound);
-app.use(middlewares.errorHandler);
+//app.use(middlewares.notFound);
+//app.use(middlewares.errorHandler);
 
 module.exports = app;
