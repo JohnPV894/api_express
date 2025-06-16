@@ -4,17 +4,18 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish_images:
+  build_and_push:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout del repositorio
         uses: actions/checkout@v4
 
       - name: Login en Docker Hub
         run: echo "${{ secrets.ACTIONS_SECRET }}" | docker login -u "${{ secrets.USER_DOCKER }}" --password-stdin
 
-      - name: Construir imagen
-        run: docker build -t johnarenales894/despliegue-ejemplo:latest .
+      - name: Construir imagen Docker
+        run: docker build -t ${{ secrets.USER_DOCKER }}/mi-app:latest .
 
       - name: Subir imagen a Docker Hub
-        run: docker push johnarenales894/despliegue-ejemplo:latest
+        run: docker push ${{ secrets.USER_DOCKER }}/mi-app:latest
