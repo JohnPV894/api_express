@@ -1,0 +1,21 @@
+name: Crear y subir imagen Docker
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Login en Docker Hub
+        run: echo "${{ secrets.ACTIONS_SECRET }}" | docker login -u "${{ secrets.USER_DOCKER }}" --password-stdin
+
+      - name: Construir imagen Docker
+        run: docker build -t ${{ secrets.USER_DOCKER }}/mi-app:latest .
+
+      - name: Subir imagen a Docker Hub
+        run: docker push ${{ secrets.USER_DOCKER }}/mi-app:latest

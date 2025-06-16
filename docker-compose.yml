@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  api:
+    build: .  # Construye la imagen usando el Dockerfile del directorio actual
+    ports:
+      - "5000:5000"  # Puerto local:contenedor
+    environment:
+      - MONGO_URL=mongodb+srv://santiago894:P5wIGtXue8HvPvli@cluster0.6xkz1.mongodb.net/  # URL para conectar a MongoDB
+    depends_on:
+      - mongo  # Espera a que MongoDB esté listo
+    restart: unless-stopped  # Reinicio automático
+
+  mongo:
+    image: mongo:6.0  # Versión oficial de MongoDB
+    volumes:
+      - mongo_data:/data/db  # Persistencia de datos
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin  # Usuario root (cambia esto)
+      - MONGO_INITDB_ROOT_PASSWORD=secret  # Contraseña (¡cámbiala!)
+    restart: unless-stopped
+
+volumes:
+  mongo_data:  # Volumen para persistir datos de MongoDB
